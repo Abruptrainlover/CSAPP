@@ -1,0 +1,7 @@
+instr_valid
+need_regids
+need_valC
+dstE中结果为rB的分支
+aluA中结果为valC的分支
+aluB中结果为valB的分支
+setCC
