@@ -1,0 +1,169 @@
+        # Loop header
+#       xorq %rax,%rax          # count = 0; 初始化就是0
+        andq %rdx,%rdx          # len <= 0?
+        jle Done                # if so, goto Done:
+
+Loop:   mrmovq (%rdi), %r10     # read val from src...
+        rmmovq %r10, (%rsi)     # ...and store it to dst
+        andq %r10, %r10         # val <= 0?
+        jle Npos                # if so, goto Npos:
+        iaddq $1, %rax          # count++
+Npos:
+
+#       irmovq $8, %r10
+        iaddq $8, %rdi          # src++
+        iaddq $8, %rsi          # dst++
+#       andq %rdx,%rdx          # len > 0?
+        iaddq $-1, %rdx         # len--
+        jg Loop                 # if so, goto Loop:
+
+
+        word_t count=0;
+        word_t val1,val2,val3,val4;
+        int i;
+        for(i=0;i<len-3;i++){
+                val1=src[i];
+                val1>0?count++: ;
+                dst[i]=val1;
+                val2=src[i+1];
+                val2>0?count++: ;
+                dst[i+1]=val2;
+                val3=src[i+2]
+                val3>0?count++: ;
+                dst[i+2]=val3;
+                val4=src[i+3]
+                val4>0?count++: ;
+                dst[i+3]=val4;
+        }
+        for(;i<len;i--){
+                dst[i]=src[i];
+                src[i]>0?count++: ;
+        }
+
+# 循环四路展开
+        andq %rdx,%rdx          # 第一次判断,len<=0 直接退出
+        jle Done
+B0:     
+        iaddq $0x-4,%rdx          # 判断是否可以展开
+        jle Eg                   # 小于等于4就直接循环
+        ret
+B1:     
+        mrmovq (%rdi),%r8        # 多加载一个,避免数据依赖
+        mrmovq 8(%rdi),%r9
+        rmmovq %r8,(%rsi)       # src传递给dst
+        andq %r8,%r8            # 对当前src值判断
+        jle B10
+        iaddq $0x1,%rax
+B10:    
+        mrmovq 16(%rdi),%r10
+        rmmovq %r9,8(%rsi)
+        andq %r9,%r9
+        jle B20
+        iaddq $0x1,%rax
+B20:
+        mrmovq 24(%rdi),%r11
+        rmmovq %r10,16(%rsi)
+        andq %r10,%r10
+        jle B30
+        iaddq $0x1,%rax
+B30:    
+        rmmovq %r11,24(%rsi)
+        andq %r11,%r11
+        jle B40
+        iaddq $0x1,%rax
+B40:    
+        iaddq $0x20,%rdi
+        iaddq $0x20,%rsi
+        jmp B0
+        ret
+Eg:
+        iaddq $4,%rdx
+        ret
+Ex:     
+        mrmovq (%rdi), %r10     # read val from src...
+        rmmovq %r10, (%rsi)     # ...and store it to dst
+        andq %r10, %r10         # val <= 0?
+        jle En                  # if so, goto En:
+        iaddq $0x1, %rax          # count++
+En:
+        iaddq $0x8, %rdi          # src++
+        iaddq $0x8, %rsi          # dst++
+        iaddq $0x-1, %rdx         # len--
+        jg Ex                 # if so, goto Ex:不满足就直接退出
+
+
+# 循环十路
+        # Loop header
+	iaddq $-10,%rdx		# len < 10?
+	jl Root			# if so, goto Root:
+
+
+Loop1:	mrmovq (%rdi), %r10	# read val from src...
+	mrmovq 8(%rdi), %r11	# read val from src...
+	rmmovq %r10, (%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle Loop2		# if so, goto Loop2:
+	iaddq $0x1, %rax		# count++
+Loop2:	mrmovq 16(%rdi), %r10	# read val from src...
+	rmmovq %r11, 8(%rsi)	# ...and store it to dst
+	andq %r11, %r11		# val <= 0?
+	jle Loop3		# if so, goto Loop3:
+	iaddq $0x1, %rax		# count++
+Loop3:	mrmovq 24(%rdi), %r11	# read val from src...
+	rmmovq %r10, 16(%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle Loop4		# if so, goto Loop4:
+	iaddq $0x1, %rax		# count++
+Loop4:	mrmovq 32(%rdi), %r10	# read val from src...
+	rmmovq %r11, 24(%rsi)	# ...and store it to dst
+	andq %r11, %r11		# val <= 0?
+	jle Loop5		# if so, goto Loop5:
+	iaddq $0x1, %rax		# count++
+Loop5:	mrmovq 40(%rdi), %r11	# read val from src...
+	rmmovq %r10, 32(%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle Loop6		# if so, goto Loop6:
+	iaddq $0x1, %rax		# count++
+Loop6:	mrmovq 48(%rdi), %r10	# read val from src...
+	rmmovq %r11, 40(%rsi)	# ...and store it to dst
+	andq %r11, %r11		# val <= 0?
+	jle Loop7		# if so, goto Loop7:
+	iaddq $0x1, %rax		# count++
+Loop7:	mrmovq 56(%rdi), %r11	# read val from src...
+	rmmovq %r10, 48(%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle Loop8		# if so, goto Loop8:
+	iaddq $0x1, %rax		# count++
+Loop8:	mrmovq 64(%rdi), %r10	# read val from src...
+	rmmovq %r11, 56(%rsi)	# ...and store it to dst
+	andq %r11, %r11		# val <= 0?
+	jle Loop9		# if so, goto Loop9:
+	iaddq $0x1, %rax		# count++
+Loop9:	mrmovq 72(%rdi), %r11	# read val from src...
+	rmmovq %r10, 64(%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle Loop10		# if so, goto Loop10:
+	iaddq $0x1, %rax		# count++
+Loop10:	#mrmovq 64(%rdi), %r10	# read val from src...
+	rmmovq %r11, 72(%rsi)	# ...and store it to dst
+	andq %r11, %r11		# val <= 0?
+	jle Loop		# if so, goto Loop:
+	iaddq $0x1, %rax		# count++
+Root:
+        iaddq $10,%rdx
+        andq %rdx,%rdx
+        je Done
+        ret
+Ex:     
+        mrmovq (%rdi), %r10     # read val from src...
+        rmmovq %r10, (%rsi)     # ...and store it to dst
+        andq %r10, %r10         # val <= 0?
+        jle En                  # if so, goto En:
+        iaddq $1, %rax          # count++
+En:
+        iaddq $8, %rdi          # src++
+        iaddq $8, %rsi          # dst++
+        iaddq $-1, %rdx         # len--
+        jg Ex                 # if so, goto Ex:不满足就直接退出
+# 最后直接循环性能不够,可以对应剩余采用K*1展开但是我还没学树,等我学完数据结构回来再补
+# 感谢Brendon大佬
