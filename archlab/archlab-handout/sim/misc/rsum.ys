@@ -1,0 +1,39 @@
+# Execution begins at address 0
+        .pos 0
+        irmovq stack, %rsp  # Set up stack pointer
+        call main           # Execution main program
+        halt                
+# Sample linked list
+        .align 8
+    ele1:
+        .quad 0x00a
+        .quad ele2
+    ele2:
+        .quad 0x0b0
+        .quad ele3
+    ele3:
+        .quad 0xc00
+        .quad 0
+
+main:
+        irmovq ele1,%rdi    # 传参数值
+        call rsum_list      # 调用函数rsum_list(linklist)
+        ret
+rsum_list:
+        andq %rdi,%rdi
+        je return
+        pushq %rbx
+        mrmovq (%rdi),%rbx
+        irmovq $0x8,%r12
+        addq %r12,%rdi
+        mrmovq (%rdi),%rdi
+        call rsum_list
+        addq %rbx,%rax
+        popq %rbx
+        ret
+return: 
+        irmovq $0x0,%rax
+        ret
+# Stack starts here and grows to lower addresses
+.pos 0x200
+stack:
